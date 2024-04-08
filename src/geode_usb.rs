@@ -33,12 +33,10 @@ DEALINGS IN THE SOFTWARE.
 use embassy_futures::join::join;
 use embassy_rp::{peripherals::USB, usb::Driver};
 
-use crate::geode_midi;
 use crate::geode_midi::midi_session;
 use embassy_usb::class::cdc_acm::CdcAcmClass;
 use embassy_usb::class::cdc_acm::State;
 use embassy_usb::class::midi::MidiClass;
-use embassy_usb::driver::EndpointError;
 use embassy_usb::{Builder, Config};
 
 #[embassy_executor::task]
@@ -96,8 +94,9 @@ pub async fn usb_task(
 
     let midi_fut = async {
         loop {
+            midi_class.wait_connection().await;
             log::info!("Connected");
-            midi_session(&mut midi_class).await;
+            let _ = midi_session(&mut midi_class).await;
             log::info!("Disconnected");
         }
     };

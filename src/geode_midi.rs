@@ -20,12 +20,8 @@
 //!
 //! This sets up a queue of MIDI packets to send on behalf of other tasks.
 
-use embassy_rp::{
-    peripherals::USB,
-    usb::{Driver, Instance},
-};
+use embassy_rp::usb::{Driver, Instance};
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, channel::Channel};
-use embassy_time::Timer;
 use embassy_usb::{class::midi::MidiClass, driver::EndpointError};
 
 struct NoteMsg {
@@ -109,16 +105,6 @@ pub async fn midi_session<'d, T: Instance + 'd>(
                 midi.write_packet(&packet).await?
             }
         }
-    }
-}
-
-/// Wrapper to reconnect to MIDI upon disconnection.
-#[embassy_executor::task]
-pub async fn midi_task(mut midi: MidiClass<'static, Driver<'static, USB>>) -> ! {
-    loop {
-        log::info!("Connected");
-        midi_session(&mut midi);
-        log::info!("Disconnected");
     }
 }
 

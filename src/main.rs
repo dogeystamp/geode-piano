@@ -1,17 +1,13 @@
 #![no_std]
 #![no_main]
-#![allow(dead_code)]
-#![allow(unused)]
 
 use embassy_executor::Spawner;
-use embassy_futures::join::join;
 use embassy_rp::bind_interrupts;
 use embassy_rp::gpio;
 use embassy_rp::gpio::AnyPin;
 use embassy_rp::gpio::Input;
 use embassy_rp::gpio::Pull;
 use embassy_rp::peripherals::USB;
-use embassy_rp::usb::Instance;
 use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_time::Timer;
 use geode_usb::usb_task;
@@ -46,7 +42,7 @@ enum Note {
 #[embassy_executor::task(pool_size = 2)]
 async fn button(pin: AnyPin, note: Note) {
     let mut button = Input::new(pin, Pull::Up);
-    let mut chan = geode_midi::MidiChannel::new(0);
+    let chan = geode_midi::MidiChannel::new(0);
     loop {
         let mut counter = 10;
         button.wait_for_falling_edge().await;
