@@ -7,7 +7,7 @@ This project only attempts to expose the keyboard as a MIDI device.
 
 - Clone project.
 - Go into project directory.
-- `cargo install probe-rs --features cli`
-- `cargo run --bin firmware`
+- Install `elf2uf2-rs`.
+- `cargo run --bin --release geode-piano`
 
 If you are missing dependencies, consult [Alex Wilson's guide](https://www.alexdwilson.dev/learning-in-public/how-to-program-a-raspberry-pi-pico) on Rust Pico development.
