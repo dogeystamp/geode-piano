@@ -2,11 +2,39 @@
 //! If USB is handled in multiple tasks the code gets weird and unwieldy (`'static` everywhere)
 //! Code in this file is mostly from the examples folder in embassy-rs.
 
+/*
+Copyright (c) Embassy project contributors
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+*/
+
 use embassy_futures::join::join;
 use embassy_rp::{peripherals::USB, usb::Driver};
 
-use crate::geode_midi::midi_session;
 use crate::geode_midi;
+use crate::geode_midi::midi_session;
 use embassy_usb::class::cdc_acm::CdcAcmClass;
 use embassy_usb::class::cdc_acm::State;
 use embassy_usb::class::midi::MidiClass;
@@ -16,7 +44,7 @@ use embassy_usb::{Builder, Config};
 #[embassy_executor::task]
 pub async fn usb_task(
     // remember this is the Driver struct not the trait
-    driver: Driver<'static, USB>
+    driver: Driver<'static, USB>,
 ) {
     // Create embassy-usb Config
     let mut config = Config::new(0xc0de, 0xcafe);
