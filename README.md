@@ -10,4 +10,37 @@ This project only attempts to expose the keyboard as a MIDI device.
 - Install `elf2uf2-rs`.
 - `cargo run --bin --release geode-piano`
 
+## materials
+
+- 1 Raspberry Pi Pico (preferably with pre-soldered headers)
+- 2 MCP23017 I/O extender chips, DIP format
+- 2 pull-up resistors for I²C (1-10kΩ), these are optional but recommended
+- 1 USB to Micro-USB cable with data transfer
+- Many jumper cables
+- Breadboard
+
+## wiring
+
+### rails
+
+- Pin 3 -> GND rail
+- Pin 36 (3V3OUT) -> power (positive) rail
+
+### i2c
+
+Let's call the closest MCP23017 chip to the Pico MCP A, and the further one MCP B.
+
+- GP16 -> MCP A SDA
+- GP17 -> MCP A SCL
+- Pull-up resistor from GP16 to power rail
+- Pull-up resistor from GP17 to power rail
+
+For both MCP23017s:
+
+- MCP RESET -> power rail
+- MCP A0, A1, A2 -> GND rail for 0, power rail for 1
+    - MCP A should be 0x20 (GND, GND, GND), MCP B 0x27 (3V3, 3V3, 3V3)
+- MCP VDD -> power rail
+- MCP VSS -> GND rail
+
 If you are missing dependencies, consult [Alex Wilson's guide](https://www.alexdwilson.dev/learning-in-public/how-to-program-a-raspberry-pi-pico) on Rust Pico development.

@@ -4,9 +4,7 @@
 use embassy_executor::Spawner;
 use embassy_rp::bind_interrupts;
 use embassy_rp::gpio;
-use embassy_rp::gpio::AnyPin;
-use embassy_rp::gpio::Input;
-use embassy_rp::gpio::Pull;
+use embassy_rp::i2c;
 use embassy_rp::peripherals::USB;
 use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_time::Timer;
@@ -16,10 +14,27 @@ use {defmt_rtt as _, panic_probe as _};
 
 mod geode_midi;
 mod geode_usb;
+mod pins;
 
 bind_interrupts!(struct Irqs {
     USBCTRL_IRQ => InterruptHandler<USB>;
 });
+
+/// Unwrap, but log before panic
+///
+/// Waits a bit to give time for the logger to flush before halting.
+/// This exists because I do not own a debug probe 😎
+async fn unwrap<T, E: core::fmt::Debug>(res: Result<T, E>) -> T {
+    match res {
+        Ok(v) => v,
+        Err(e) => {
+            log::error!("[FATAL] {:?}", e);
+            log::error!("HALTING DUE TO PANIC.");
+            Timer::after_millis(10).await;
+            panic!();
+        }
+    }
+}
 
 #[embassy_executor::task]
 async fn blink_task(pin: embassy_rp::gpio::AnyPin) {
@@ -30,62 +45,15 @@ async fn blink_task(pin: embassy_rp::gpio::AnyPin) {
         Timer::after_millis(100).await;
 
         led.set_low();
-        Timer::after_secs(5).await;
+        Timer::after_millis(900).await;
     }
 }
 
-enum Note {
-    C,
-    Pedal,
-}
-
-#[embassy_executor::task(pool_size = 2)]
-async fn button(pin: AnyPin, note: Note) {
-    let mut button = Input::new(pin, Pull::Up);
-    let chan = geode_midi::MidiChannel::new(0);
+#[embassy_executor::task]
+async fn read_task(mut pin_driver: pins::TransparentPins) {
     loop {
-        let mut counter = 10;
-        button.wait_for_falling_edge().await;
-        loop {
-            Timer::after_millis(5).await;
-            if button.is_low() {
-                counter -= 1;
-            } else {
-                counter = 10;
-            }
-            if counter <= 0 {
-                break;
-            }
-        }
-        match note {
-            Note::C => chan.note_on(72, 64).await,
-            Note::Pedal => {
-                chan.controller(geode_midi::Controller::SustainPedal, 64)
-                    .await
-            }
-        }
-        log::info!("button press");
-        counter = 10;
-        button.wait_for_rising_edge().await;
-        loop {
-            Timer::after_millis(5).await;
-            if button.is_high() {
-                counter -= 1;
-            } else {
-                counter = 10;
-            }
-            if counter <= 0 {
-                break;
-            }
-        }
-        match note {
-            Note::C => chan.note_off(72, 0).await,
-            Note::Pedal => {
-                chan.controller(geode_midi::Controller::SustainPedal, 0)
-                    .await
-            }
-        }
-        log::info!("button release");
+        log::warn!("{:b}", unwrap(pin_driver.read_all()).await);
+        Timer::after_millis(1000).await;
     }
 }
 
@@ -94,11 +62,37 @@ async fn main(_spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
 
     let driver = Driver::new(p.USB, Irqs);
+    _spawner.spawn(usb_task(driver)).unwrap();
 
     _spawner.spawn(blink_task(p.PIN_25.into())).unwrap();
-    _spawner.spawn(button(p.PIN_16.into(), Note::C)).unwrap();
-    _spawner
-        .spawn(button(p.PIN_17.into(), Note::Pedal))
-        .unwrap();
-    _spawner.spawn(usb_task(driver)).unwrap();
+
+    Timer::after_secs(2).await;
+
+    log::info!("main: init i2c");
+    let sda = p.PIN_16;
+    let scl = p.PIN_17;
+
+    let mut i2c_config = i2c::Config::default();
+    let freq = 100_000;
+    i2c_config.frequency = freq;
+    let i2c = i2c::I2c::new_blocking(p.I2C0, scl, sda, i2c_config);
+
+    log::info!("main: starting transparent pin driver");
+    let mut pin_driver = pins::TransparentPins::new(i2c, [0x20], []);
+
+    log::info!("main: setting pins as input");
+    for i in 0..16 {
+        log::debug!("main: setting pin {} as input, pull up", i);
+        unwrap(pin_driver.set_input(i)).await;
+        unwrap(pin_driver.set_pull(i, gpio::Pull::Up)).await;
+    }
+
+    // these pins are faulty as inputs
+    // unwrap(pin_driver.set_output(7)).await;
+    // unwrap(pin_driver.set_output(8 + 7)).await;
+    // unwrap(pin_driver.set_output(16 + 7)).await;
+    // unwrap(pin_driver.set_output(16 + 8 + 7)).await;
+
+    log::debug!("main: starting read task");
+    _spawner.spawn(read_task(pin_driver)).unwrap();
 }

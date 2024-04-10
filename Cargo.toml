@@ -33,6 +33,7 @@ heapless = "0.8"
 usbd-hid = "0.7.0"
 
 embedded-hal-1 = { package = "embedded-hal", version = "1.0" }
+embedded-hal-02 = { package = "embedded-hal", version = "0.2.7" }
 embedded-hal-async = "1.0"
 embedded-hal-bus = { version = "0.1", features = ["async"] }
 embedded-io-async = { version = "0.6.1", features = ["defmt-03"] }
@@ -40,6 +41,8 @@ embedded-storage = { version = "0.3" }
 static_cell = "2"
 portable-atomic = { version = "1.5", features = ["critical-section"] }
 log = "0.4"
+
+mcp23017 = { version = "1.0.0" }
 
 [profile.release]
 debug = 2

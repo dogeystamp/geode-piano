@@ -788,6 +788,7 @@ dependencies = [
  "embassy-time",
  "embassy-usb",
  "embassy-usb-logger",
+ "embedded-hal 0.2.7",
  "embedded-hal 1.0.0",
  "embedded-hal-async",
  "embedded-hal-bus",
@@ -798,6 +799,7 @@ dependencies = [
  "futures",
  "heapless 0.8.0",
  "log",
+ "mcp23017",
  "panic-probe",
  "portable-atomic",
  "smart-leds",
@@ -983,6 +985,15 @@ name = "log"
 version = "0.4.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
+
+[[package]]
+name = "mcp23017"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c32fd6627e73f1cfa95c00ddcdcb5a6a6ddbd10b308d08588a502c018b6e12c"
+dependencies = [
+ "embedded-hal 0.2.7",
+]
 
 [[package]]
 name = "memchr"

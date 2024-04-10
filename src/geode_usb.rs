@@ -81,7 +81,7 @@ pub async fn usb_task(
     // Create classes on the builder.
     let mut midi_class = MidiClass::new(&mut builder, 1, 1, 64);
     let logger_class = CdcAcmClass::new(&mut builder, &mut logger_state, 64);
-    let log_fut = embassy_usb_logger::with_class!(1024, log::LevelFilter::Info, logger_class);
+    let log_fut = embassy_usb_logger::with_class!(1024, log::LevelFilter::Trace, logger_class);
 
     // The `MidiClass` can be split into `Sender` and `Receiver`, to be used in separate tasks.
     // let (sender, receiver) = class.split();
