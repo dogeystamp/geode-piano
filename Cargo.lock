@@ -802,6 +802,7 @@ dependencies = [
  "mcp23017",
  "panic-probe",
  "portable-atomic",
+ "shared-bus",
  "smart-leds",
  "static_cell",
  "usbd-hid 0.7.0",
@@ -1382,6 +1383,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.58",
+]
+
+[[package]]
+name = "shared-bus"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6b8d3f0e34309c22ca4a9a27d24fa493e31573485f3493802b75b9d706756a6"
+dependencies = [
+ "embedded-hal 0.2.7",
+ "nb 1.1.0",
 ]
 
 [[package]]

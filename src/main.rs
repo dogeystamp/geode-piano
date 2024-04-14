@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![deny(rust_2018_idioms)]
 
 use embassy_executor::Spawner;
 use embassy_rp::bind_interrupts;
@@ -78,13 +79,13 @@ async fn main(_spawner: Spawner) {
     let i2c = i2c::I2c::new_blocking(p.I2C0, scl, sda, i2c_config);
 
     log::info!("main: starting transparent pin driver");
-    let mut pin_driver = pins::TransparentPins::new(i2c, [0x20], []);
+    let mut pin_driver = pins::TransparentPins::new(i2c, [0x20, 0x27], []);
 
     log::info!("main: setting pins as input");
-    for i in 0..16 {
+    for i in 0..pins::N_EXTENDED_PINS {
         log::debug!("main: setting pin {} as input, pull up", i);
-        unwrap(pin_driver.set_input(i)).await;
-        unwrap(pin_driver.set_pull(i, gpio::Pull::Up)).await;
+        unwrap(pin_driver.set_input(i as u8)).await;
+        unwrap(pin_driver.set_pull(i as u8, gpio::Pull::Up)).await;
     }
 
     // these pins are faulty as inputs

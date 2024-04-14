@@ -43,6 +43,7 @@ portable-atomic = { version = "1.5", features = ["critical-section"] }
 log = "0.4"
 
 mcp23017 = { version = "1.0.0" }
+shared-bus = "0.3.1"
 
 [profile.release]
 debug = 2
