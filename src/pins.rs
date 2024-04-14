@@ -32,7 +32,7 @@ pub const PINS_PER_EXTENDER: usize = 16;
 /// Number of MCP23017 chips used.
 pub const N_PIN_EXTENDERS: usize = 2;
 /// Number of pins driven directly by the board.
-pub const N_REGULAR_PINS: usize = 0;
+pub const N_REGULAR_PINS: usize = 8;
 /// Number of total extended pins
 pub const N_EXTENDED_PINS: usize = PINS_PER_EXTENDER * N_PIN_EXTENDERS;
 
@@ -83,6 +83,14 @@ pub struct TransparentPins {
     i2c_bus: I2cBus,
 }
 
+/// Helper to define the onboard pins in TransparentPins
+macro_rules! pin_array {
+    ($($pin: expr),*) => {
+        [$($pin.into(),)*]
+    }
+}
+pub(crate) use pin_array;
+
 /// Create a new short-lived MCP23017 struct.
 ///
 /// This is needed because our bus proxy uses references to the bus,
@@ -130,7 +138,6 @@ impl TransparentPins {
             ret |= (ext.read_gpioab()? as u64) << (i * PINS_PER_EXTENDER);
         }
         for pin in 0..N_REGULAR_PINS {
-            log::trace!("pin read: {}", pin);
             ret |= (self.pins[pin].is_high() as u64) << (N_EXTENDED_PINS + pin);
         }
 

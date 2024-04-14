@@ -79,10 +79,14 @@ async fn main(_spawner: Spawner) {
     let i2c = i2c::I2c::new_blocking(p.I2C0, scl, sda, i2c_config);
 
     log::info!("main: starting transparent pin driver");
-    let mut pin_driver = pins::TransparentPins::new(i2c, [0x20, 0x27], []);
+    let mut pin_driver = pins::TransparentPins::new(
+        i2c,
+        [0x20, 0x27],
+        pins::pin_array!(p.PIN_15, p.PIN_14, p.PIN_13, p.PIN_12, p.PIN_11, p.PIN_10, p.PIN_18, p.PIN_19),
+    );
 
     log::info!("main: setting pins as input");
-    for i in 0..pins::N_EXTENDED_PINS {
+    for i in 0..(pins::N_EXTENDED_PINS + pins::N_REGULAR_PINS) {
         log::debug!("main: setting pin {} as input, pull up", i);
         unwrap(pin_driver.set_input(i as u8)).await;
         unwrap(pin_driver.set_pull(i as u8, gpio::Pull::Up)).await;
