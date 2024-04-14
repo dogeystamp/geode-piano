@@ -22,11 +22,10 @@ extern crate embedded_hal_02;
 use embassy_rp::{
     gpio::{AnyPin, Flex, Pull},
     i2c::{self, Blocking},
-    peripherals::{I2C0, I2C1},
+    peripherals::I2C0,
 };
 
 extern crate mcp23017;
-use embassy_time::Timer;
 use mcp23017::MCP23017;
 
 /// Number of pins driven by each MCP23017 pin extender.

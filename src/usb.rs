@@ -33,7 +33,7 @@ DEALINGS IN THE SOFTWARE.
 use embassy_futures::join::join;
 use embassy_rp::{peripherals::USB, usb::Driver};
 
-use crate::geode_midi::midi_session;
+use crate::midi::midi_session;
 use embassy_usb::class::cdc_acm::CdcAcmClass;
 use embassy_usb::class::cdc_acm::State;
 use embassy_usb::class::midi::MidiClass;

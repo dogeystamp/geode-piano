@@ -8,13 +8,13 @@ use embassy_rp::i2c;
 use embassy_rp::peripherals::USB;
 use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_time::Timer;
-use geode_usb::usb_task;
 use gpio::{Level, Output};
+use usb::usb_task;
 use {defmt_rtt as _, panic_probe as _};
 
-mod geode_midi;
-mod geode_usb;
+mod midi;
 mod pins;
+mod usb;
 
 bind_interrupts!(struct Irqs {
     USBCTRL_IRQ => InterruptHandler<USB>;
