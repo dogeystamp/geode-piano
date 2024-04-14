@@ -87,10 +87,12 @@ async fn main(_spawner: Spawner) {
 
     log::info!("main: setting pins as input");
     for i in 0..(pins::N_EXTENDED_PINS + pins::N_REGULAR_PINS) {
-        log::debug!("main: setting pin {} as input, pull up", i);
         unwrap(pin_driver.set_input(i as u8)).await;
         unwrap(pin_driver.set_pull(i as u8, gpio::Pull::Up)).await;
     }
+    log::debug!("main: setting pin 0 as output, active low");
+    unwrap(pin_driver.set_output(0)).await;
+    unwrap(pin_driver.write_all(((1 << 40 - 1)) & 0)).await;
 
     // these pins are faulty as inputs
     // unwrap(pin_driver.set_output(7)).await;

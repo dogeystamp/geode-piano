@@ -76,7 +76,8 @@ impl<E> From<mcp23017::Error<E>> for Error {
 /// "Transparent pins" to consistently interface with a GPIO extender + onboard GPIO ports.
 ///
 /// This interface uses a single addressing scheme for all the pins it manages.
-/// `ext[0]` is 0-15, `ext[1]` is 16-31, regular pins are 32-63.
+/// Extender A is 0-15, Extender B is 16-31, and so on, then all the onboard pins.
+/// Port A is in the lower byte and port B is in the upper byte of each extender range.
 pub struct TransparentPins {
     addrs: [u8; N_PIN_EXTENDERS],
     pins: [Flex<'static, AnyPin>; N_REGULAR_PINS],
@@ -127,15 +128,35 @@ impl TransparentPins {
         }
     }
 
+    /// Write all pins from a single 64-bit value.
+    pub fn write_all(&mut self, val: u64) -> Result<(), Error> {
+        log::trace!("write_all: called with val {}", val);
+        for i in 0..N_PIN_EXTENDERS {
+            // value for this extender
+            let ext_val = (val >> (i*PINS_PER_EXTENDER)) & ((1 << PINS_PER_EXTENDER) - 1);
+            extender!(self, i)?.write_gpioab(ext_val as u16)?;
+        }
+        for pin in 0..N_REGULAR_PINS {
+            self.pins[pin].set_level(match (val >> N_EXTENDED_PINS >> pin) & 1 {
+                0 => embassy_rp::gpio::Level::Low,
+                1 => embassy_rp::gpio::Level::High,
+                _ => panic!("Invalid level"),
+            })
+        }
+
+        Ok(())
+    }
+
     /// Read all pins into a single 64-bit value.
-    ///
-    /// For a given extender's range, port B is in the lower byte and port A in the upper byte.
     pub fn read_all(&mut self) -> Result<u64, Error> {
         log::trace!("read_all: called");
         let mut ret: u64 = 0;
         for i in 0..N_PIN_EXTENDERS {
             let mut ext = extender!(self, i)?;
-            ret |= (ext.read_gpioab()? as u64) << (i * PINS_PER_EXTENDER);
+            let read_val = ext.read_gpioab()? as u64;
+            // api is wonky (https://github.com/lucazulian/mcp23017/issues/8)
+            let flipped_val = ((read_val & 0x00ff) << 8) | ((read_val & 0xff00) >> 8);
+            ret |= flipped_val << (i * PINS_PER_EXTENDER);
         }
         for pin in 0..N_REGULAR_PINS {
             ret |= (self.pins[pin].is_high() as u64) << (N_EXTENDED_PINS + pin);
@@ -166,6 +187,7 @@ impl TransparentPins {
         Ok(())
     }
 
+    /// Sets a pin as an input.
     pub fn set_input(&mut self, pin: u8) -> Result<(), Error> {
         let pin = self.get_pin(pin)?;
         match pin {
@@ -177,6 +199,7 @@ impl TransparentPins {
         Ok(())
     }
 
+    /// Sets a pin as an output.
     pub fn set_output(&mut self, pin: u8) -> Result<(), Error> {
         let pin = self.get_pin(pin)?;
         match pin {
