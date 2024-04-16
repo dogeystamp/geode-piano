@@ -20,7 +20,7 @@ pub async fn unwrap<T, E: core::fmt::Debug>(res: Result<T, E>) -> T {
         Err(e) => {
             log::error!("[FATAL] {:?}", e);
             log::error!("HALTING DUE TO PANIC.");
-            Timer::after_millis(10).await;
+            Timer::after_secs(1).await;
             panic!();
         }
     }
