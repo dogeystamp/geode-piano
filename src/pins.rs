@@ -85,12 +85,12 @@ pub struct TransparentPins {
 }
 
 /// Helper to define the onboard pins in TransparentPins
+#[macro_export]
 macro_rules! pin_array {
     ($($pin: expr),*) => {
         [$($pin.into(),)*]
     }
 }
-pub(crate) use pin_array;
 
 /// Create a new short-lived MCP23017 struct.
 ///
@@ -133,7 +133,7 @@ impl TransparentPins {
         log::trace!("write_all: called with val {}", val);
         for i in 0..N_PIN_EXTENDERS {
             // value for this extender
-            let ext_val = (val >> (i*PINS_PER_EXTENDER)) & ((1 << PINS_PER_EXTENDER) - 1);
+            let ext_val = (val >> (i * PINS_PER_EXTENDER)) & ((1 << PINS_PER_EXTENDER) - 1);
             extender!(self, i)?.write_gpioab(ext_val as u16)?;
         }
         for pin in 0..N_REGULAR_PINS {

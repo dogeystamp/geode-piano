@@ -43,6 +43,7 @@ use embassy_usb::{Builder, Config};
 pub async fn usb_task(
     // remember this is the Driver struct not the trait
     driver: Driver<'static, USB>,
+    log_level: log::LevelFilter,
 ) {
     // Create embassy-usb Config
     let mut config = Config::new(0xc0de, 0xcafe);
@@ -81,7 +82,7 @@ pub async fn usb_task(
     // Create classes on the builder.
     let mut midi_class = MidiClass::new(&mut builder, 1, 1, 64);
     let logger_class = CdcAcmClass::new(&mut builder, &mut logger_state, 64);
-    let log_fut = embassy_usb_logger::with_class!(1024, log::LevelFilter::Trace, logger_class);
+    let log_fut = embassy_usb_logger::with_class!(1024, log_level, logger_class);
 
     // The `MidiClass` can be split into `Sender` and `Receiver`, to be used in separate tasks.
     // let (sender, receiver) = class.split();

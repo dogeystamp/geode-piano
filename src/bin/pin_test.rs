@@ -1,3 +1,7 @@
+//! Tester for `geode_piano::pins::TransparentPins`.
+//!
+//! This is quickly hacked together.
+
 #![no_std]
 #![no_main]
 #![deny(rust_2018_idioms)]
@@ -9,46 +13,8 @@ use embassy_rp::i2c;
 use embassy_rp::peripherals::USB;
 use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_time::Timer;
-use gpio::{Level, Output};
-use usb::usb_task;
-use {defmt_rtt as _, panic_probe as _};
-
-mod midi;
-mod pins;
-mod usb;
-
-bind_interrupts!(struct Irqs {
-    USBCTRL_IRQ => InterruptHandler<USB>;
-});
-
-/// Unwrap, but log before panic
-///
-/// Waits a bit to give time for the logger to flush before halting.
-/// This exists because I do not own a debug probe 😎
-async fn unwrap<T, E: core::fmt::Debug>(res: Result<T, E>) -> T {
-    match res {
-        Ok(v) => v,
-        Err(e) => {
-            log::error!("[FATAL] {:?}", e);
-            log::error!("HALTING DUE TO PANIC.");
-            Timer::after_millis(10).await;
-            panic!();
-        }
-    }
-}
-
-#[embassy_executor::task]
-async fn blink_task(pin: embassy_rp::gpio::AnyPin) {
-    let mut led = Output::new(pin, Level::Low);
-
-    loop {
-        led.set_high();
-        Timer::after_millis(100).await;
-
-        led.set_low();
-        Timer::after_millis(900).await;
-    }
-}
+use geode_piano::usb::usb_task;
+use geode_piano::{blinky, pin_array, pins, unwrap};
 
 #[embassy_executor::task]
 async fn read_task(mut pin_driver: pins::TransparentPins) {
@@ -58,14 +24,17 @@ async fn read_task(mut pin_driver: pins::TransparentPins) {
     }
 }
 
+bind_interrupts!(struct Irqs {
+    USBCTRL_IRQ => InterruptHandler<USB>;
+});
+
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
 
     let driver = Driver::new(p.USB, Irqs);
-    _spawner.spawn(usb_task(driver)).unwrap();
-
-    _spawner.spawn(blink_task(p.PIN_25.into())).unwrap();
+    unwrap(_spawner.spawn(usb_task(driver, log::LevelFilter::Debug))).await;
+    unwrap(_spawner.spawn(blinky::blink_task(p.PIN_25.into()))).await;
 
     Timer::after_secs(2).await;
 
@@ -82,7 +51,7 @@ async fn main(_spawner: Spawner) {
     let mut pin_driver = pins::TransparentPins::new(
         i2c,
         [0x20, 0x27],
-        pins::pin_array!(p.PIN_15, p.PIN_14, p.PIN_13, p.PIN_12, p.PIN_11, p.PIN_10, p.PIN_18, p.PIN_19),
+        pin_array!(p.PIN_15, p.PIN_14, p.PIN_13, p.PIN_12, p.PIN_11, p.PIN_10, p.PIN_18, p.PIN_19),
     );
 
     log::info!("main: setting pins as input");
@@ -92,13 +61,7 @@ async fn main(_spawner: Spawner) {
     }
     log::debug!("main: setting pin 0 as output, active low");
     unwrap(pin_driver.set_output(0)).await;
-    unwrap(pin_driver.write_all(((1 << 40 - 1)) & 0)).await;
-
-    // these pins are faulty as inputs
-    // unwrap(pin_driver.set_output(7)).await;
-    // unwrap(pin_driver.set_output(8 + 7)).await;
-    // unwrap(pin_driver.set_output(16 + 7)).await;
-    // unwrap(pin_driver.set_output(16 + 8 + 7)).await;
+    unwrap(pin_driver.write_all((1 << 40 - 1) & 0)).await;
 
     log::debug!("main: starting read task");
     _spawner.spawn(read_task(pin_driver)).unwrap();

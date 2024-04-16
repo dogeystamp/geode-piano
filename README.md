@@ -8,7 +8,13 @@ This project only attempts to expose the keyboard as a MIDI device.
 - Clone project.
 - Go into project directory.
 - Install `elf2uf2-rs`.
-- `cargo run --bin --release geode-piano`
+- Follow the materials and wiring sections below.
+- Set the Pico into BOOTSEL mode:
+    - Hold down the BOOTSEL button on the Pico. Keep holding it during the following steps.
+    - Reset the Pico: either replug the power, or short Pin 30 (RUN) to GND through a button or wire.
+- Mount the Pico's storage on your device.
+- `cargo run --release --bin [binary]`
+    - `[binary]` can be any binary under `src/bin/`. Run `cargo run --bin` to list them.
 
 ## materials
 
