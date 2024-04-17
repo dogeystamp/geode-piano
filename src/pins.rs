@@ -187,7 +187,7 @@ impl TransparentPins {
                 ret.n_total_pins = ret.usable_extended_pins + N_REGULAR_PINS;
             }
             ret.disable_unsafe_pins = true;
-            log::debug!("TransparentPins: usable_pins {}", ret.n_total_pins)
+            log::debug!("TransparentPins: {} usable pins", ret.n_total_pins)
         }
         Ok(ret)
     }
