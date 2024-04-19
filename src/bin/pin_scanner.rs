@@ -45,7 +45,7 @@ struct Connection {
 #[embassy_executor::task]
 async fn scanner_task(mut pin_driver: pins::TransparentPins) {
     log::info!("scanner_task: setting pins as input");
-    for i in 0..pin_driver.n_total_pins {
+    for i in 0..pin_driver.n_usable_pins() {
         unwrap(pin_driver.set_input(i as u8)).await;
         unwrap(pin_driver.set_pull(i as u8, gpio::Pull::Up)).await;
     }
@@ -61,15 +61,15 @@ async fn scanner_task(mut pin_driver: pins::TransparentPins) {
         log::info!("");
         log::info!("---");
         log::info!("STARTING SCAN...");
-        for gnd_pin in 0..pin_driver.n_total_pins {
+        for gnd_pin in 0..pin_driver.n_usable_pins() {
             let gnd_pin = gnd_pin as u8;
             unwrap(pin_driver.set_output(gnd_pin)).await;
             let input = unwrap(pin_driver.read_all()).await;
             unwrap(pin_driver.set_input(gnd_pin)).await;
 
             // this represents the pins that are different from expected
-            let mask = input ^ (((1 << pin_driver.n_total_pins) - 1) ^ (1 << gnd_pin));
-            for input_pin in 0..pin_driver.n_total_pins {
+            let mask = input ^ (((1 << pin_driver.n_usable_pins()) - 1) ^ (1 << gnd_pin));
+            for input_pin in 0..pin_driver.n_usable_pins() {
                 let input_pin = input_pin as u8;
                 if ((1 << input_pin) & mask) != 0 && n_connections < MAX_CONNECTIONS {
                     connections[n_connections] = Some(Connection { gnd_pin, input_pin });

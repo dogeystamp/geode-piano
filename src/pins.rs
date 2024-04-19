@@ -95,8 +95,8 @@ pub struct TransparentPins {
     pins: [Flex<'static, AnyPin>; N_REGULAR_PINS],
     i2c_bus: I2cBus,
     disable_unsafe_pins: bool,
-    /// Number of total usable pins. Transparent pins all have an address from `0..n_total_pins`.
-    pub n_total_pins: usize,
+    /// Number of total usable pins.
+    n_total_pins: usize,
     /// Usable pins per extender. Depends on `disable_unsafe_pins`.
     usable_pins_per_extender: usize,
     /// Usable pin count on all extenders. Depends on `disable_unsafe_pins`.
@@ -122,6 +122,11 @@ macro_rules! extender {
 }
 
 impl TransparentPins {
+    /// Get amount of usable pins. Transparent pins all have an address from `0..n_usable_pins()`.
+    pub fn n_usable_pins(&self) -> usize {
+        self.n_total_pins
+    }
+
     /// Transform addresses into a transparent pin number, taking into account pins that aren't being used.
     fn addr_to_pin(&self, addr: u8) -> u8 {
         if self.disable_unsafe_pins {

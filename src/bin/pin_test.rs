@@ -60,7 +60,7 @@ async fn main(_spawner: Spawner) {
     .await;
 
     log::info!("main: setting pins as input");
-    for i in 0..pin_driver.n_total_pins {
+    for i in 0..pin_driver.n_usable_pins() {
         unwrap(pin_driver.set_input(i as u8)).await;
         unwrap(pin_driver.set_pull(i as u8, gpio::Pull::Up)).await;
     }
