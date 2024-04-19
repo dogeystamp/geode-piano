@@ -71,11 +71,9 @@ async fn scanner_task(mut pin_driver: pins::TransparentPins) {
             let mask = input ^ (((1 << pin_driver.n_total_pins) - 1) ^ (1 << gnd_pin));
             for input_pin in 0..pin_driver.n_total_pins {
                 let input_pin = input_pin as u8;
-                if ((1 << input_pin) & mask) != 0 {
-                    if n_connections < MAX_CONNECTIONS {
-                        connections[n_connections] = Some(Connection { gnd_pin, input_pin });
-                        n_connections += 1;
-                    }
+                if ((1 << input_pin) & mask) != 0 && n_connections < MAX_CONNECTIONS {
+                    connections[n_connections] = Some(Connection { gnd_pin, input_pin });
+                    n_connections += 1;
                 }
             }
             // this should avoid overexerting the components
@@ -84,8 +82,8 @@ async fn scanner_task(mut pin_driver: pins::TransparentPins) {
         }
 
         log::info!("SCAN RESULTS");
-        for i in 0..n_connections {
-            match connections[i] {
+        for v in connections.iter().take(n_connections) {
+            match v {
                 None => {}
                 Some(con) => {
                     log::warn!("GND {:0>2} -> INPUT {:0>2}", con.gnd_pin, con.input_pin);

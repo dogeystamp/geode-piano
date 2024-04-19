@@ -103,7 +103,7 @@ pub struct TransparentPins {
     usable_extended_pins: usize,
 }
 
-/// Helper to define the onboard pins in TransparentPins
+/// Helper to define the onboard pins in [`TransparentPins`]
 #[macro_export]
 macro_rules! pin_array {
     ($($pin: expr),*) => {
@@ -171,7 +171,7 @@ impl TransparentPins {
     ) -> Result<Self, Error> {
         let mut ret = TransparentPins {
             addrs,
-            pins: pins.map(|x| Flex::new(x)),
+            pins: pins.map(Flex::new),
             i2c_bus: shared_bus::BusManagerSimple::new(i2c),
             disable_unsafe_pins: false,
             usable_pins_per_extender: PINS_PER_EXTENDER,

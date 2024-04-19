@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![deny(rust_2018_idioms)]
+#![deny(rustdoc::broken_intra_doc_links)]
 
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};

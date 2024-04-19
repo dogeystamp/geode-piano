@@ -32,7 +32,7 @@ struct NoteMsg {
 
 impl NoteMsg {
     fn new(on: bool, note: u8, velocity: u8) -> Self {
-        return NoteMsg { on, note, velocity };
+        NoteMsg { on, note, velocity }
     }
 }
 
@@ -48,7 +48,7 @@ struct ControllerMsg {
 
 impl ControllerMsg {
     fn new(controller: Controller, value: u8) -> Self {
-        return ControllerMsg { controller, value };
+        ControllerMsg { controller, value }
     }
 }
 
@@ -64,10 +64,10 @@ struct MidiMsg {
 
 impl MidiMsg {
     fn new(msg: MsgType, channel: u8) -> Self {
-        return MidiMsg {
+        MidiMsg {
             msg,
             channel: channel & 0xf,
-        };
+        }
     }
 }
 
@@ -115,9 +115,10 @@ pub struct MidiChannel {
 
 impl MidiChannel {
     pub fn new(channel: u8) -> Self {
-        return MidiChannel { channel };
+        MidiChannel { channel }
     }
 
+    /// MIDI Note-On
     pub async fn note_on(&self, note: u8, velocity: u8) {
         MIDI_QUEUE
             .send(MidiMsg::new(
@@ -127,6 +128,7 @@ impl MidiChannel {
             .await;
     }
 
+    /// MIDI Note-Off
     pub async fn note_off(&self, note: u8, velocity: u8) {
         MIDI_QUEUE
             .send(MidiMsg::new(
@@ -136,6 +138,7 @@ impl MidiChannel {
             .await;
     }
 
+    /// MIDI Controller (e.g. sustain pedal on/off)
     pub async fn controller(&self, ctrl: Controller, value: u8) {
         MIDI_QUEUE
             .send(MidiMsg::new(
