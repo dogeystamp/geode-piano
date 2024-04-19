@@ -79,6 +79,21 @@ impl<E> From<mcp23017::Error<E>> for Error {
     }
 }
 
+/// Range of pins that can be iterated over
+#[derive(Clone, Copy)]
+pub struct PinCollection {
+    /// Number of total usable pins.
+    n_usable: usize,
+}
+
+impl IntoIterator for PinCollection {
+    type Item = u8;
+    type IntoIter = core::ops::Range<u8>;
+    fn into_iter(self) -> Self::IntoIter {
+        0..(self.n_usable as u8)
+    }
+}
+
 /// "Transparent pins" to consistently interface with a GPIO extender + onboard GPIO ports.
 ///
 /// This interface uses a single addressing scheme for all the pins it manages. Extender A is 0-15,
@@ -92,13 +107,13 @@ impl<E> From<mcp23017::Error<E>> for Error {
 /// pins addressing scheme.
 pub struct TransparentPins {
     addrs: [u8; N_PIN_EXTENDERS],
-    pins: [Flex<'static, AnyPin>; N_REGULAR_PINS],
+    onboard_pins: [Flex<'static, AnyPin>; N_REGULAR_PINS],
     i2c_bus: I2cBus,
     disable_unsafe_pins: bool,
-    /// Number of total usable pins.
-    n_total_pins: usize,
     /// Usable pins per extender. Depends on `disable_unsafe_pins`.
     usable_pins_per_extender: usize,
+    /// Iterable over all usable pins
+    pub pins: PinCollection,
     /// Usable pin count on all extenders. Depends on `disable_unsafe_pins`.
     usable_extended_pins: usize,
 }
@@ -124,7 +139,7 @@ macro_rules! extender {
 impl TransparentPins {
     /// Get amount of usable pins. Transparent pins all have an address from `0..n_usable_pins()`.
     pub fn n_usable_pins(&self) -> usize {
-        self.n_total_pins
+        self.pins.n_usable
     }
 
     /// Transform addresses into a transparent pin number, taking into account pins that aren't being used.
@@ -176,12 +191,14 @@ impl TransparentPins {
     ) -> Result<Self, Error> {
         let mut ret = TransparentPins {
             addrs,
-            pins: pins.map(Flex::new),
+            onboard_pins: pins.map(Flex::new),
             i2c_bus: shared_bus::BusManagerSimple::new(i2c),
             disable_unsafe_pins: false,
             usable_pins_per_extender: PINS_PER_EXTENDER,
             usable_extended_pins: N_EXTENDED_PINS,
-            n_total_pins: N_EXTENDED_PINS + N_REGULAR_PINS,
+            pins: PinCollection {
+                n_usable: N_EXTENDED_PINS + N_REGULAR_PINS,
+            },
         };
         if disable_unsafe_pins {
             for i in 0..N_PIN_EXTENDERS {
@@ -189,10 +206,10 @@ impl TransparentPins {
                 ret.set_output((i as u8) * (PINS_PER_EXTENDER as u8) + PORT_B + 7)?;
                 ret.usable_pins_per_extender = PINS_PER_EXTENDER - UNSAFE_PER_EXTENDER;
                 ret.usable_extended_pins = N_PIN_EXTENDERS * ret.usable_pins_per_extender;
-                ret.n_total_pins = ret.usable_extended_pins + N_REGULAR_PINS;
+                ret.pins.n_usable = ret.usable_extended_pins + N_REGULAR_PINS;
             }
             ret.disable_unsafe_pins = true;
-            log::debug!("TransparentPins: {} usable pins", ret.n_total_pins)
+            log::debug!("TransparentPins: {} usable pins", ret.pins.n_usable)
         }
         Ok(ret)
     }
@@ -230,7 +247,7 @@ impl TransparentPins {
             extender!(self, i)?.write_gpioab(self.usable_to_raw(ext_val as u16))?;
         }
         for pin in 0..N_REGULAR_PINS {
-            self.pins[pin].set_level(match (val >> self.usable_extended_pins >> pin) & 1 {
+            self.onboard_pins[pin].set_level(match (val >> self.usable_extended_pins >> pin) & 1 {
                 0 => embassy_rp::gpio::Level::Low,
                 1 => embassy_rp::gpio::Level::High,
                 _ => panic!("Invalid level"),
@@ -250,7 +267,7 @@ impl TransparentPins {
             ret |= (self.raw_to_usable(read_val) as u64) << (i * self.usable_pins_per_extender);
         }
         for pin in 0..N_REGULAR_PINS {
-            ret |= (self.pins[pin].is_high() as u64) << (self.usable_extended_pins + pin);
+            ret |= (self.onboard_pins[pin].is_high() as u64) << (self.usable_extended_pins + pin);
         }
 
         Ok(ret)
@@ -264,7 +281,7 @@ impl TransparentPins {
         let pin = self.get_pin(pin_n)?;
         match pin {
             TransparentPin::Onboard(p) => {
-                self.pins[p].set_pull(pull);
+                self.onboard_pins[p].set_pull(pull);
             }
             TransparentPin::Extended(p) => {
                 let pull_on: bool = match pull {
@@ -284,7 +301,7 @@ impl TransparentPins {
         let pin_n = self.addr_to_pin(addr);
         let pin = self.get_pin(pin_n)?;
         match pin {
-            TransparentPin::Onboard(p) => self.pins[p].set_as_input(),
+            TransparentPin::Onboard(p) => self.onboard_pins[p].set_as_input(),
             TransparentPin::Extended(p) => {
                 extender!(self, p.ext_id)?.pin_mode(p.loc_pin, mcp23017::PinMode::INPUT)?
             }
@@ -297,7 +314,7 @@ impl TransparentPins {
         let pin_n = self.addr_to_pin(addr);
         let pin = self.get_pin(pin_n)?;
         match pin {
-            TransparentPin::Onboard(p) => self.pins[p].set_as_output(),
+            TransparentPin::Onboard(p) => self.onboard_pins[p].set_as_output(),
             TransparentPin::Extended(p) => {
                 extender!(self, p.ext_id)?.pin_mode(p.loc_pin, mcp23017::PinMode::OUTPUT)?
             }
