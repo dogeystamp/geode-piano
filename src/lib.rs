@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 #![no_std]
 #![no_main]
 #![deny(rust_2018_idioms)]

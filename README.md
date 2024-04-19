@@ -16,6 +16,8 @@ This project only attempts to expose the keyboard as a MIDI device.
 - `cargo run --release --bin [binary]`
     - `[binary]` can be any binary under `src/bin/`. Run `cargo run --bin` to list them.
 
+If you are missing dependencies, consult [Alex Wilson's guide](https://www.alexdwilson.dev/learning-in-public/how-to-program-a-raspberry-pi-pico) on Rust Pico development.
+
 ## materials
 
 - 1 Raspberry Pi Pico (preferably with pre-soldered headers)
@@ -26,6 +28,8 @@ This project only attempts to expose the keyboard as a MIDI device.
 - Breadboard
 
 ## wiring
+
+**Ensure all wires are well plugged in every time you use this circuit.** 
 
 ### rails
 
@@ -38,6 +42,8 @@ Let's call the closest MCP23017 chip to the Pico MCP A, and the further one MCP 
 
 - GP16 -> MCP A SDA
 - GP17 -> MCP A SCL
+- MCP A SDA -> MCP B SDA
+- MCP A SCL -> MCP B SCL
 - Pull-up resistor from GP16 to power rail
 - Pull-up resistor from GP17 to power rail
 
@@ -48,5 +54,3 @@ For both MCP23017s:
     - MCP A should be 0x20 (GND, GND, GND), MCP B 0x27 (3V3, 3V3, 3V3)
 - MCP VDD -> power rail
 - MCP VSS -> GND rail
-
-If you are missing dependencies, consult [Alex Wilson's guide](https://www.alexdwilson.dev/learning-in-public/how-to-program-a-raspberry-pi-pico) on Rust Pico development.
