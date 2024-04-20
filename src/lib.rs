@@ -12,6 +12,7 @@ pub mod blinky;
 pub mod midi;
 pub mod pins;
 pub mod usb;
+pub mod matrix;
 
 /// Unwrap, but log before panic
 ///
