@@ -189,6 +189,16 @@ pub enum Note {
     B8 = 119,
 }
 
+#[derive(Clone, Copy)]
+pub enum KeyAction {
+    /// Switch that is first triggered when pressing a key.
+    N1(Note),
+    /// Switch triggered when key bottoms out.
+    N2(Note),
+    /// Basic switch with fixed velocity. Be careful not to mix with actions with velocity detection.
+    N(Note, u8),
+}
+
 pub struct Disconnected {}
 
 impl From<EndpointError> for Disconnected {

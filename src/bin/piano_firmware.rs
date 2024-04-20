@@ -27,21 +27,23 @@ use embassy_rp::bind_interrupts;
 use embassy_rp::i2c;
 use embassy_rp::peripherals::USB;
 use embassy_rp::usb::{Driver, InterruptHandler};
-use geode_piano::usb::usb_task;
+use geode_piano::matrix;
 use geode_piano::matrix::KeyMatrix;
+use geode_piano::midi;
+use geode_piano::usb::usb_task;
 use geode_piano::{blinky, pin_array, pins, unwrap};
 
 #[embassy_executor::task]
 async fn piano_task(pin_driver: pins::TransparentPins) {
+    use geode_piano::midi::KeyAction::*;
     use geode_piano::midi::Note::*;
 
     // GND pins
-    let col_pins = [23];
+    let col_pins = [23, 24];
     // Input pins
     let row_pins = [20, 15, 4];
     // Notes for each key
-    let keymap = [[C4, D4, E4]];
-
+    let keymap = [[N1(C4), N1(D4), N1(E4)], [N1(C4), N2(D4), N2(E4)]];
     let mut mat = KeyMatrix::new(col_pins, row_pins, keymap);
     mat.scan(pin_driver).await;
 }
@@ -63,7 +65,7 @@ async fn main(_spawner: Spawner) {
     let scl = p.PIN_17;
 
     let mut i2c_config = i2c::Config::default();
-    let freq = 100_000;
+    let freq = 400_000;
     i2c_config.frequency = freq;
     let i2c = i2c::I2c::new_blocking(p.I2C0, scl, sda, i2c_config);
 
@@ -81,4 +83,12 @@ async fn main(_spawner: Spawner) {
 
     log::info!("main: starting piano task");
     _spawner.spawn(piano_task(pin_driver)).unwrap();
+
+    log::info!("main: starting sustain pedal task");
+    _spawner
+        .spawn(matrix::pedal(
+            midi::Controller::SustainPedal,
+            p.PIN_8.into(),
+        ))
+        .unwrap();
 }

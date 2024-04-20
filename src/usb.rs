@@ -1,5 +1,6 @@
 //! Handle all USB communcation in this task.
-//! If USB is handled in multiple tasks the code gets weird and unwieldy (`'static` everywhere)
+//!
+//! If USB is handled in multiple tasks the code gets weird and unwieldy (`'static` everywhere).
 //! Code in this file is mostly from the examples folder in embassy-rs.
 
 /*

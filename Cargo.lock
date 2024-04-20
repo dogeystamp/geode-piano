@@ -771,7 +771,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "geode-piano"
+name = "geode_piano"
 version = "0.1.0"
 dependencies = [
  "byte-slice-cast 1.2.2",

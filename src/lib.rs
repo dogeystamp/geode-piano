@@ -1,5 +1,4 @@
 #![doc = include_str!("../README.md")]
-
 #![no_std]
 #![no_main]
 #![deny(rust_2018_idioms)]
@@ -9,10 +8,10 @@ use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
 pub mod blinky;
+pub mod matrix;
 pub mod midi;
 pub mod pins;
 pub mod usb;
-pub mod matrix;
 
 /// Unwrap, but log before panic
 ///
