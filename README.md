@@ -112,4 +112,10 @@ I used male-to-female jumpers with the female end trimmed to reveal the metal pa
 This was necessary to attach to the short pins on the jumpers.
 The opening in the plastic on the female end should face inwards when connected to the sockets.
 
-Then, plug the ribbon cables from your piano into the sockets.
+Plugging this many jumper cables into a single socket can cause [crosstalk](https://en.m.wikipedia.org/wiki/Crosstalk).
+Twisting cables and spacing them from each other may help prevent this.
+To test for crosstalk, run `pin_scanner` and connect the socket contacts with each other with a jumper cable.
+Each scan should return exactly two connections, these being the forward and reverse connection over the jumper cable.
+If there are more connections, that means there is crosstalk.
+
+Once the wiring is done, plug the ribbon cables from your piano into the sockets.

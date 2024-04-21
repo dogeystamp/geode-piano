@@ -197,6 +197,8 @@ pub enum KeyAction {
     N2(Note),
     /// Basic switch with fixed velocity. Be careful not to mix with actions with velocity detection.
     N(Note, u8),
+    /// NOP
+    NOP,
 }
 
 pub struct Disconnected {}

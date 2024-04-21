@@ -26,7 +26,7 @@ pub struct KeyMatrix<const N_ROWS: usize, const N_COLS: usize> {
     col_pins: [u8; N_COLS],
     /// Input pins at the left of each row
     row_pins: [u8; N_ROWS],
-    keymap: [[midi::KeyAction; N_ROWS]; N_COLS],
+    keymap: [[midi::KeyAction; N_COLS]; N_ROWS],
 }
 
 impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
@@ -39,7 +39,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
     pub fn new(
         col_pins: [u8; N_COLS],
         row_pins: [u8; N_ROWS],
-        keymap: [[midi::KeyAction; N_ROWS]; N_COLS],
+        keymap: [[midi::KeyAction; N_COLS]; N_ROWS],
     ) -> Self {
         KeyMatrix {
             col_pins,
@@ -56,7 +56,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
 
         // scan frequency
         // this might(?) panic if the scan takes longer than the tick
-        let mut ticker = Ticker::every(Duration::from_millis(2));
+        let mut ticker = Ticker::every(Duration::from_millis(13));
 
         let chan = midi::MidiChannel::new(0);
         const MAX_NOTES: usize = 128;
@@ -75,7 +75,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                 // values that are logical ON
                 let mask = input ^ (((1 << pin_driver.n_usable_pins()) - 1) ^ (1 << col));
                 for (j, row) in self.row_pins.iter().enumerate() {
-                    let key_action = self.keymap[i][j];
+                    let key_action = self.keymap[j][i];
                     let key_active = mask & (1 << row) != 0;
                     match key_action {
                         midi::KeyAction::N1(note) => {
@@ -114,7 +114,8 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                                 note_on[note as usize] = false;
                                 chan.note_off(note, 0).await;
                             }
-                        }
+                        },
+                        midi::KeyAction::NOP => {},
                     }
                 }
             }
