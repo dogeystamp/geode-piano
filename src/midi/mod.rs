@@ -86,7 +86,7 @@ impl MidiMsg {
 /// Note identifiers
 ///
 /// See src/midi/note_def.py for how this is generated
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Note {
     A0 = 21,
     AS0 = 22,

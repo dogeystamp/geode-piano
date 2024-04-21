@@ -3,7 +3,7 @@
 use crate::midi;
 use crate::pins;
 use crate::unwrap;
-use core::cmp::min;
+use core::cmp::{min};
 use embassy_rp::gpio;
 use embassy_time::{Duration, Instant, Ticker};
 
@@ -56,7 +56,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
 
         // scan frequency
         // this might(?) panic if the scan takes longer than the tick
-        let mut ticker = Ticker::every(Duration::from_millis(13));
+        let mut ticker = Ticker::every(Duration::from_millis(8));
 
         let chan = midi::MidiChannel::new(0);
         const MAX_NOTES: usize = 128;
@@ -66,7 +66,14 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
         // (for velocity detection) moment key is first touched
         let mut note_first: [Option<Instant>; MAX_NOTES] = [None; MAX_NOTES];
 
+        let mut counter = 0;
+
         loop {
+            counter += 1;
+            counter %= 50;
+            let profile = counter == 0;
+            let prof_start = Instant::now();
+
             for (i, col) in self.col_pins.iter().enumerate() {
                 unwrap(pin_driver.set_output(*col)).await;
                 let input = unwrap(pin_driver.read_all()).await;
@@ -79,11 +86,12 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                     let key_active = mask & (1 << row) != 0;
                     match key_action {
                         midi::KeyAction::N1(note) => {
-                            if !note_on[note as usize]
-                                && note_first[note as usize].is_none()
-                                && key_active
-                            {
-                                note_first[note as usize] = Some(Instant::now());
+                            if key_active {
+                                if note_first[note as usize].is_none() {
+                                    note_first[note as usize] = Some(Instant::now());
+                                }
+                            } else if note_first[note as usize].is_some() {
+                                note_first[note as usize] = None;
                             }
                         }
                         midi::KeyAction::N2(note) => {
@@ -92,15 +100,17 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                                     // millisecond duration of keypress
                                     let dur =
                                         note_first[note as usize].unwrap().elapsed().as_millis();
-                                    // 1905 millis is the minimum velocity
-                                    let velocity: u8 = 127 - min(dur / 15, 127) as u8;
-                                    note_first[note as usize] = None;
+                                    let velocity: u8 = if dur <= 80 {
+                                        (127 - dur) as u8
+                                    } else {
+                                        (127 - min(dur, 250) / 5 - 70) as u8
+                                    };
+                                    log::debug!("{note:?} velocity {velocity} from dur {dur}ms");
                                     note_on[note as usize] = true;
                                     chan.note_on(note, velocity).await;
                                 }
                             } else if note_on[note as usize] {
                                 note_on[note as usize] = false;
-                                note_first[note as usize] = None;
                                 chan.note_off(note, 0).await;
                             }
                         }
@@ -114,10 +124,14 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                                 note_on[note as usize] = false;
                                 chan.note_off(note, 0).await;
                             }
-                        },
-                        midi::KeyAction::NOP => {},
+                        }
+                        midi::KeyAction::NOP => {}
                     }
                 }
+            }
+
+            if profile {
+                log::trace!("profile: scan took {}ms", prof_start.elapsed().as_millis())
             }
             ticker.next().await;
         }

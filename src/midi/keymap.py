@@ -12,6 +12,7 @@ Use cargo fmt to de-messify the output once pasted in the source.
 """
 
 from dataclasses import dataclass
+import sys
 
 
 @dataclass
@@ -62,7 +63,7 @@ for col in mat:
     print(f"[{', '.join(col)}],")
 print("]")
 
-print(f"{len(row_pins)} rows, {len(col_pins)} cols")
-print(f"row pins: [{', '.join([str(i) for i in row_pins])}]")
-print(f"col pins: [{', '.join([str(i) for i in col_pins])}]")
-print(f"{empty_counter} empty cells")
+print(f"{len(row_pins)} rows, {len(col_pins)} cols", file=sys.stderr)
+print(f"row pins: [{', '.join([str(i) for i in row_pins])}]", file=sys.stderr)
+print(f"col pins: [{', '.join([str(i) for i in col_pins])}]", file=sys.stderr)
+print(f"{empty_counter} empty cells", file=sys.stderr)
