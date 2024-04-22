@@ -3,20 +3,26 @@
 use crate::midi;
 use crate::pins;
 use crate::unwrap;
-use core::cmp::{min};
+use core::cmp::min;
 use embassy_rp::gpio;
 use embassy_time::{Duration, Instant, Ticker};
 
 /// Task to handle pedals in MIDI
+///
+/// `norm_open` represents a normally open switch
 #[embassy_executor::task]
-pub async fn pedal(pedal: midi::Controller, pin: gpio::AnyPin) {
+pub async fn pedal(pedal: midi::Controller, pin: gpio::AnyPin, norm_open: bool) {
     let mut inp = gpio::Input::new(pin, gpio::Pull::Up);
     let chan = midi::MidiChannel::new(0);
     loop {
+        let on_val = if norm_open { 64 } else { 0 };
+        let off_val = if norm_open { 0 } else { 64 };
         inp.wait_for_low().await;
-        chan.controller(pedal, 64).await;
+        chan.controller(pedal, on_val).await;
+        log::debug!("{pedal:?} set to {on_val}");
         inp.wait_for_high().await;
-        chan.controller(pedal, 0).await;
+        chan.controller(pedal, off_val).await;
+        log::debug!("{pedal:?} set to {off_val}");
     }
 }
 

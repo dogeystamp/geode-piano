@@ -489,6 +489,7 @@ async fn main(_spawner: Spawner) {
         .spawn(matrix::pedal(
             midi::Controller::SustainPedal,
             p.PIN_8.into(),
+            false,
         ))
         .unwrap();
 }

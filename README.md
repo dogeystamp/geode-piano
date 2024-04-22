@@ -48,7 +48,8 @@ You should be able to play now.
 - Ribbon cable sockets. The following is for my own piano, yours might be different:
     - 18-pin 1.25mm pitch FFC connector
     - 22-pin 1.25mm pitch FFC connector
-- Many jumper cables
+- Many jumper cables (40 male-to-female, ? male-to-male)
+- Two alligator clips
 - Breadboard
 
 For the ribbon cable sockets, open up your piano and find the ribbon cables.
@@ -60,7 +61,7 @@ Usually, these measurements can be found on the datasheets for FFC sockets.
 
 ## wiring
 
-**Ensure all wires are well plugged in every time you use this circuit.** 
+**Ensure all wires, especially GND and power wires, are well plugged in every time you use this circuit.** 
 
 ### rails
 
@@ -119,3 +120,12 @@ Each scan should return exactly two connections, these being the forward and rev
 If there are more connections, that means there is crosstalk.
 
 Once the wiring is done, plug the ribbon cables from your piano into the sockets.
+
+## sustain pedal
+
+Using jumper wires and alligator clips, wire the Tip of the pedal's TRS jack into the GND rail.
+Then, wire the Ring (middle metal part, surrounded by two black bands), into the pedal pin (by default GP8).
+To attach the alligator clips to the [TRS jack](https://en.m.wikipedia.org/wiki/Phone_connector_(audio)#Design), you can strip the outer layer of a paperclip and wrap the metallic part around the jack.
+
+Because the sustain pedal is normally-closed, failure to wire this appropriately could result in the sustain pedal being constantly on.
+To disable the sustain pedal, comment out the `pedal_task` in `src/bin/piano_firmware.rs`.
