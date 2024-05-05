@@ -4,6 +4,19 @@ Digital piano firmware for the Raspberry Pi Pico.
 This project only attempts to expose the keyboard as a MIDI device.
 The purpose is to revive digital pianos that have working keys, but faulty electronics.
 
+Here is a demo of Geode-Piano, where I play a bit from Lacrimosa:
+
+<video controls width="640" height="360" type="video/mp4">
+    <source src="https://raw.githubusercontent.com/dogeystamp/geode-piano/main/.assets/demo.mp4">
+    Your browser does not support the video element.
+</video>
+
+## features
+
+- 88-key piano
+- Key matrix pin layout scanner
+- (Basic) velocity detection
+
 ## installation
 
 - Clone project.
@@ -26,18 +39,30 @@ The intended usage is to first plug the device into the piano keyboard, then use
 scan the key-matrix. (See the next sections on how to wire it up.)
 On every key, press it down half-way and then fully and note the pins connections detected at each level.
 These correspond to the [`midi::KeyAction::N1`] and [`midi::KeyAction::N2`] actions respectively.
+Use this format:
+```
+[note name] [GND pin]
+[n1 input pin] 
+[n2 input pin]
+```
 There should be two switches per key for velocity detection.
 If there isn't, then the key is an [`midi::KeyAction::N`] (it will be stuck at a fixed velocity).
+Note names are in the format `C4, CS4, D4`, and so on.
 
-Put the connections in a spreadsheet and reorganize it so that GND pins are column headers, and the Input pins are row headers.
-This will comprise the keymap.
-The keymap is a an array with the same dimensions as the spreadsheet grid.
+The keymap is an array with the same dimensions as the spreadsheet grid.
 This is comprised of N1, N2, and N entries, indicating which note a key corresponds to.
+Use `src/midi/keymap.py` to generate this boilerplate based on the pins noted down.
+
+Either modify `src/bin/piano_firmware.rs` to fit your configuration, or copy it to a new source file.
+Copy the keymap, as well as the `col_pins` and `row_pins` generated into this.
 
 Once the keymap is done, run the `piano_firmware` binary and plug the USB cable to your computer.
 Open up a DAW and select Geode-Piano as a MIDI input device.
 I use LMMS with the [Maestro Concert Grand v2](https://www.linuxsampler.org/instruments.html) samples.
+If you don't need all of LMMS's features, `qsampler` can work too.
 You should be able to play now.
+
+Optionally, you can also hook up a speaker to the computer for better sound quality.
 
 ## materials
 
@@ -61,12 +86,15 @@ Usually, these measurements can be found on the datasheets for FFC sockets.
 
 ## wiring
 
+![preview](https://raw.githubusercontent.com/dogeystamp/geode-piano/main/.assets/circuit.jpg)
+
 **Ensure all wires, especially GND and power wires, are well plugged in every time you use this circuit.** 
 
 ### rails
 
 - Pin 3 -> GND rail
 - Pin 36 (3V3OUT) -> power (positive) rail
+- Connect rails on each side to each other (GND to GND, power to power)
 
 ### i2c
 
@@ -105,6 +133,8 @@ Connect the following pins to the ribbon cable sockets in any order (use more or
 - GP22
 - All MCP GPIO pins except GPB7 and GPA7 on both chips (see [datasheet](https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP23017-Data-Sheet-DS20001952.pdf) for diagram of pins)
 
+If you are using a different set of pins, you need to modify both the `pin_scanner` source and the `piano_firmware` source.
+
 GPB7 and GPA7 have known issues and therefore can not be inputs.
 Again, refer to the datasheet about this.
 It is simpler to exclude them instead of working around that limitation.
@@ -126,6 +156,9 @@ Once the wiring is done, plug the ribbon cables from your piano into the sockets
 Using jumper wires and alligator clips, wire the Tip of the pedal's TRS jack into the GND rail.
 Then, wire the Ring (middle metal part, surrounded by two black bands), into the pedal pin (by default GP8).
 To attach the alligator clips to the [TRS jack](https://en.m.wikipedia.org/wiki/Phone_connector_(audio)#Design), you can strip the outer layer of a paperclip and wrap the metallic part around the jack.
+This works well for the Tip part, but for the Ring I use copper wire that is stripped.
+
+![preview](https://raw.githubusercontent.com/dogeystamp/geode-piano/main/.assets/jack.jpg)
 
 Because the sustain pedal is normally-closed, failure to wire this appropriately could result in the sustain pedal being constantly on.
 To disable the sustain pedal, comment out the `pedal_task` in `src/bin/piano_firmware.rs`.
