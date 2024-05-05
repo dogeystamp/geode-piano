@@ -11,7 +11,7 @@ Here is a demo of Geode-Piano, where I play a bit from Lacrimosa:
     Your browser does not support the video element.
 </video>
 
-https://raw.githubusercontent.com/dogeystamp/geode-piano/main/.assets/demo.mp4
+https://github.com/dogeystamp/geode-piano/assets/61116261/2a5f732a-5d3e-4b5f-9467-373fa84dd736
 
 ## features
 
