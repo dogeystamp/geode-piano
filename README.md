@@ -11,6 +11,8 @@ Here is a demo of Geode-Piano, where I play a bit from Lacrimosa:
     Your browser does not support the video element.
 </video>
 
+https://raw.githubusercontent.com/dogeystamp/geode-piano/main/.assets/demo.mp4
+
 ## features
 
 - 88-key piano
