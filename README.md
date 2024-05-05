@@ -51,7 +51,7 @@ There should be two switches per key for velocity detection.
 If there isn't, then the key is an [`midi::KeyAction::N`] (it will be stuck at a fixed velocity).
 Note names are in the format `C4, CS4, D4`, and so on.
 
-The keymap is an array with the same dimensions as the spreadsheet grid.
+The keymap is an array with the same dimensions as the matrix grid.
 This is comprised of N1, N2, and N entries, indicating which note a key corresponds to.
 Use `src/midi/keymap.py` to generate this boilerplate based on the pins noted down.
 
