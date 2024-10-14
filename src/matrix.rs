@@ -62,7 +62,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
 
         // scan frequency
         // this might(?) panic if the scan takes longer than the tick
-        let mut ticker = Ticker::every(Duration::from_millis(8));
+        let mut ticker = Ticker::every(Duration::from_micros(3600));
 
         let chan = midi::MidiChannel::new(0);
         const MAX_NOTES: usize = 128;
@@ -80,7 +80,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
         loop {
             let profile: bool = counter == 0;
             counter += 1;
-            counter %= 50;
+            counter %= 500;
             let prof_start = Instant::now();
             let mut prof_time_last_col = prof_start;
             let mut prof_dur_col = Duration::from_ticks(0);

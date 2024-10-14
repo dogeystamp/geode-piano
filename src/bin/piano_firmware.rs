@@ -465,7 +465,7 @@ async fn main(_spawner: Spawner) {
     let scl = p.PIN_17;
 
     let mut i2c_config = i2c::Config::default();
-    let freq = 400_000;
+    let freq = 1_000_000;
     i2c_config.frequency = freq;
     let i2c = i2c::I2c::new_blocking(p.I2C0, scl, sda, i2c_config);
 
