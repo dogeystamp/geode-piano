@@ -23,6 +23,7 @@
 use embassy_rp::usb::{Driver, Instance};
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, channel::Channel};
 use embassy_usb::{class::midi::MidiClass, driver::EndpointError};
+use defmt::Format;
 
 ////////////////////////////////
 ////////////////////////////////
@@ -42,7 +43,7 @@ impl NoteMsg {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Format)]
 pub enum Controller {
     SustainPedal = 64,
 }
@@ -86,7 +87,7 @@ impl MidiMsg {
 /// Note identifiers
 ///
 /// See src/midi/note_def.py for how this is generated
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Format)]
 pub enum Note {
     A0 = 21,
     AS0 = 22,
@@ -225,13 +226,13 @@ pub async fn midi_session<'d, T: Instance + 'd>(
                 let status: u8 = (if note.on { 0b1001_0000 } else { 0b1000_0000 }) | msg.channel;
                 // i'll be honest i have no idea where the first number here comes from
                 let packet = [8, status, note.note as u8, note.velocity];
-                log::trace!("midi_session: note {:?}", packet);
+                defmt::trace!("midi_session: note {:?}", packet);
                 midi.write_packet(&packet).await?
             }
             MsgType::Controller(ctrl) => {
                 let status: u8 = (0b1011_0000) | msg.channel;
                 let packet = [8, status, ctrl.controller as u8, ctrl.value];
-                log::trace!("midi_session: control {:?}", packet);
+                defmt::trace!("midi_session: control {:?}", packet);
                 midi.write_packet(&packet).await?
             }
         }

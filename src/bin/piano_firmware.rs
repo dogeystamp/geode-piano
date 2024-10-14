@@ -460,7 +460,7 @@ async fn main(_spawner: Spawner) {
     unwrap(_spawner.spawn(usb_task(driver, log::LevelFilter::Debug))).await;
     unwrap(_spawner.spawn(blinky::blink_task(p.PIN_25.into()))).await;
 
-    log::debug!("main: init i2c");
+    defmt::debug!("main: init i2c");
     let sda = p.PIN_16;
     let scl = p.PIN_17;
 
@@ -469,7 +469,7 @@ async fn main(_spawner: Spawner) {
     i2c_config.frequency = freq;
     let i2c = i2c::I2c::new_blocking(p.I2C0, scl, sda, i2c_config);
 
-    log::debug!("main: starting transparent pin driver");
+    defmt::debug!("main: starting transparent pin driver");
     let pin_driver = unwrap(pins::TransparentPins::new(
         i2c,
         [0x20, 0x27],
@@ -481,15 +481,15 @@ async fn main(_spawner: Spawner) {
     ))
     .await;
 
-    log::info!("main: starting piano task");
+    defmt::info!("main: starting piano task");
     _spawner.spawn(piano_task(pin_driver)).unwrap();
 
-    log::info!("main: starting sustain pedal task");
+    defmt::info!("main: starting sustain pedal task");
     _spawner
         .spawn(matrix::pedal(
             midi::Controller::SustainPedal,
             p.PIN_8.into(),
-            false,
+            true,
         ))
         .unwrap();
 }

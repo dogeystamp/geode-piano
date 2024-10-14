@@ -209,7 +209,7 @@ impl TransparentPins {
                 ret.pins.n_usable = ret.usable_extended_pins + N_REGULAR_PINS;
             }
             ret.disable_unsafe_pins = true;
-            log::debug!("TransparentPins: {} usable pins", ret.pins.n_usable)
+            defmt::debug!("TransparentPins: {} usable pins", ret.pins.n_usable)
         }
         Ok(ret)
     }
@@ -221,7 +221,7 @@ impl TransparentPins {
             // ports are flipped from what it should be
             let port_a = (val & (0xff00)) >> 8;
             let port_b = val & (0x00ff);
-            log::trace!("raw_to_usable: raw {val:016b} a {port_a:08b} b {port_b:08b}");
+            defmt::trace!("raw_to_usable: raw {:016b} a {:08b} b {:08b}", val, port_a, port_b);
             (port_a & 0x7f) | ((port_b & 0x7f) << 7)
         } else {
             val
@@ -239,7 +239,7 @@ impl TransparentPins {
 
     /// Write all pins from a single 64-bit value.
     pub fn write_all(&mut self, val: u64) -> Result<(), Error> {
-        log::trace!("write_all: called with val {}", val);
+        defmt::trace!("write_all: called with val {}", val);
         for i in 0..N_PIN_EXTENDERS {
             // value for this extender
             let ext_val = (val >> (i * self.usable_pins_per_extender))
@@ -259,7 +259,7 @@ impl TransparentPins {
 
     /// Read all pins into a single 64-bit value.
     pub fn read_all(&mut self) -> Result<u64, Error> {
-        log::trace!("read_all: called");
+        defmt::trace!("read_all: called");
         let mut ret: u64 = 0;
         for i in 0..N_PIN_EXTENDERS {
             let mut ext = extender!(self, i)?;

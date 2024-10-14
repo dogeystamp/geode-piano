@@ -47,10 +47,10 @@ pub async fn usb_task(
     log_level: log::LevelFilter,
 ) {
     // Create embassy-usb Config
-    let mut config = Config::new(0xc0de, 0xcafe);
+    let mut config = Config::new(0xdead, 0xbeef);
     config.manufacturer = Some("dogeystamp");
     config.product = Some("Geode-Piano MIDI keyboard");
-    config.serial_number = Some("alpha-12345");
+    config.serial_number = Some("0.2.0");
     config.max_power = 100;
     config.max_packet_size_0 = 64;
 
@@ -97,9 +97,9 @@ pub async fn usb_task(
     let midi_fut = async {
         loop {
             midi_class.wait_connection().await;
-            log::info!("Connected");
+            defmt::info!("Connected");
             let _ = midi_session(&mut midi_class).await;
-            log::info!("Disconnected");
+            defmt::info!("Disconnected");
         }
     };
 

@@ -13,11 +13,13 @@ pub mod midi;
 pub mod pins;
 pub mod usb;
 
-/// Unwrap, but log before panic
+/// Wrapper over unwrap.
 ///
-/// Waits a bit to give time for the logger to flush before halting.
-/// This exists because I do not own a debug probe 😎
+/// Logs over usb instead of instantly panicking.
+/// If you don't have a debug probe, comment out the first line.
 pub async fn unwrap<T, E: core::fmt::Debug>(res: Result<T, E>) -> T {
+    return res.unwrap();
+    #[allow(unreachable_code)]
     match res {
         Ok(v) => v,
         Err(e) => {

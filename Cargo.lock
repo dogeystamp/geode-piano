@@ -772,7 +772,7 @@ dependencies = [
 
 [[package]]
 name = "geode_piano"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "byte-slice-cast 1.2.2",
  "cortex-m",

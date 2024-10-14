@@ -19,10 +19,10 @@ pub async fn pedal(pedal: midi::Controller, pin: gpio::AnyPin, norm_open: bool) 
         let off_val = if norm_open { 0 } else { 64 };
         inp.wait_for_low().await;
         chan.controller(pedal, on_val).await;
-        log::debug!("{pedal:?} set to {on_val}");
+        defmt::debug!("{} set to {}", pedal, on_val);
         inp.wait_for_high().await;
         chan.controller(pedal, off_val).await;
-        log::debug!("{pedal:?} set to {off_val}");
+        defmt::debug!("{} set to {}", pedal, off_val);
     }
 }
 
@@ -73,17 +73,26 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
         let mut note_first: [Option<Instant>; MAX_NOTES] = [None; MAX_NOTES];
 
         let mut counter = 0;
+        let mut prof_col_idx = 0;
+
+        defmt::debug!("using {} columns", N_COLS);
 
         loop {
+            let profile: bool = counter == 0;
             counter += 1;
             counter %= 50;
-            let profile = counter == 0;
             let prof_start = Instant::now();
+            let mut prof_time_last_col = prof_start;
+            let mut prof_dur_col = Duration::from_ticks(0);
 
             for (i, col) in self.col_pins.iter().enumerate() {
                 unwrap(pin_driver.set_output(*col)).await;
                 let input = unwrap(pin_driver.read_all()).await;
                 unwrap(pin_driver.set_input(*col)).await;
+
+                if profile && i == prof_col_idx {
+                    prof_dur_col = prof_time_last_col.elapsed();
+                }
 
                 // values that are logical ON
                 let mask = input ^ (((1 << pin_driver.n_usable_pins()) - 1) ^ (1 << col));
@@ -111,7 +120,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                                     } else {
                                         (127 - min(dur, 250) / 5 - 70) as u8
                                     };
-                                    log::debug!("{note:?} velocity {velocity} from dur {dur}ms");
+                                    defmt::debug!("{} velocity {} from dur {}ms", note, velocity, dur);
                                     note_on[note as usize] = true;
                                     chan.note_on(note, velocity).await;
                                 }
@@ -134,11 +143,20 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                         midi::KeyAction::NOP => {}
                     }
                 }
+                prof_time_last_col = Instant::now();
+            }
+            if profile {
+                let time_total = prof_start.elapsed();
+                prof_col_idx += 1;
+                prof_col_idx %= N_COLS;
+                defmt::debug!(
+                    "profile: total scan took {}us, {}-th column {}us",
+                    time_total.as_micros(),
+                    prof_col_idx,
+                    prof_dur_col.as_micros()
+                );
             }
 
-            if profile {
-                log::trace!("profile: scan took {}ms", prof_start.elapsed().as_millis())
-            }
             ticker.next().await;
         }
     }

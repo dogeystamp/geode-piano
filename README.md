@@ -21,11 +21,20 @@ https://github.com/dogeystamp/geode-piano/assets/61116261/2a5f732a-5d3e-4b5f-946
 
 ## installation
 
+- Follow the materials and wiring sections below.
 - Clone project.
 - Go into project directory.
 - Install the `thumbv6m-none-eabi` target using rustup.
+
+You now have two choices for installation.
+You can either use a debug probe such as the [Raspberry Pi Debug Probe](https://www.raspberrypi.com/products/debug-probe/), or install over USB.
+The debug probe is more convenient
+for iterating quickly,
+but is harder to set up.
+
+### no debug probe
 - Install `elf2uf2-rs`.
-- Follow the materials and wiring sections below.
+- Set `runner = "elf2uf2-rs --deploy --serial"` in `.cargo/config`.
 - Set the Pico into BOOTSEL mode:
     - Hold down the BOOTSEL button on the Pico. Keep holding it during the following step.
     - Reset the Pico: either replug the power, or short Pin 30 (RUN) to GND through a button or wire.
@@ -33,7 +42,27 @@ https://github.com/dogeystamp/geode-piano/assets/61116261/2a5f732a-5d3e-4b5f-946
 - `cargo run --release --bin [binary]`
     - `[binary]` can be any binary under `src/bin/`. Run `cargo run --bin` to list them.
 
+### with debug probe
+
+- Install `probe-rs`.
+- Follow the wiring instructions in the [Pico Getting Started Guide](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf), at _Appendix A: Using Picoprobe_ in the Picoprobe Wiring section.
+    You only need to wire GND, SWCLK and SWDIO.
+- If you are using a second Pico as a debug probe,
+    you must use a second USB data wire to communicate with both the debug probe and the geode-piano board.
+- `cargo run --release --bin [binary]`
+    - `[binary]` can be any binary under `src/bin/`. Run `cargo run --bin` to list them.
+
 If you are missing dependencies, consult [Alex Wilson's guide](https://www.alexdwilson.dev/learning-in-public/how-to-program-a-raspberry-pi-pico) on Rust Pico development.
+
+Note that essential program output (e.g. pin scanner output)
+goes through Embassy's USB serial logger rather than the defmt log that the debug probe has access to.
+To see this output, install picocom and run
+
+```
+sudo picocom -b 115200 /dev/ttyACM0
+```
+
+changing `ttyACM0` to whichever serial device your Pico may be using.
 
 ## usage
 
@@ -60,8 +89,7 @@ Copy the keymap, as well as the `col_pins` and `row_pins` generated into this.
 
 Once the keymap is done, run the `piano_firmware` binary and plug the USB cable to your computer.
 Open up a DAW and select Geode-Piano as a MIDI input device.
-I use LMMS with the [Maestro Concert Grand v2](https://www.linuxsampler.org/instruments.html) samples.
-If you don't need all of LMMS's features, `qsampler` can work too.
+If you don't need a full DAW, you can use `qsampler` with, for example, the [Maestro Concert Grand v2](https://www.linuxsampler.org/instruments.html) samples.
 You should be able to play now.
 
 Optionally, you can also hook up a speaker to the computer for better sound quality.
@@ -78,6 +106,10 @@ Optionally, you can also hook up a speaker to the computer for better sound qual
 - Many jumper cables (40 male-to-female, ? male-to-male)
 - Two alligator clips
 - Breadboard
+- (optional) 1 debug probe, could be a second Raspberry Pi Pico
+    - and necessary wires to use it, for example
+        - 3-pin JST-SH cable
+        - data micro-USB to USB cable
 
 For the ribbon cable sockets, open up your piano and find the ribbon cables.
 Unplug them from the PCB, and count the amount of pins on them.
