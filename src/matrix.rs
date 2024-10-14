@@ -115,10 +115,10 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                                     // millisecond duration of keypress
                                     let dur =
                                         note_first[note as usize].unwrap().elapsed().as_millis();
-                                    let velocity: u8 = if dur <= 80 {
-                                        (127 - dur) as u8
+                                    let velocity: u8 = if dur <= 60 {
+                                        (127 - dur * 6 / 5) as u8
                                     } else {
-                                        (127 - min(dur, 250) / 5 - 70) as u8
+                                        (127 - min(dur, 240) / 4 - 60) as u8
                                     };
                                     defmt::debug!("{} velocity {} from dur {}ms", note, velocity, dur);
                                     note_on[note as usize] = true;
