@@ -7,16 +7,25 @@ use core::cmp::min;
 use embassy_rp::gpio;
 use embassy_time::{Duration, Instant, Ticker};
 
+pub enum NormalState {
+    /// Normal open
+    NO,
+    /// Normal closed
+    NC,
+}
+
 /// Task to handle pedals in MIDI
 ///
 /// `norm_open` represents a normally open switch
 #[embassy_executor::task]
-pub async fn pedal(pedal: midi::Controller, pin: gpio::AnyPin, norm_open: bool) {
+pub async fn pedal(pedal: midi::Controller, pin: gpio::AnyPin, norm_state: NormalState) {
     let mut inp = gpio::Input::new(pin, gpio::Pull::Up);
     let chan = midi::MidiChannel::new(0);
     loop {
-        let on_val = if norm_open { 64 } else { 0 };
-        let off_val = if norm_open { 0 } else { 64 };
+        let (off_val, on_val) = match norm_state {
+            NormalState::NO => (0, 64),
+            NormalState::NC => (64, 0),
+        };
         inp.wait_for_low().await;
         chan.controller(pedal, on_val).await;
         defmt::debug!("{} set to {}", pedal, on_val);
@@ -62,7 +71,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
 
         // scan frequency
         // this might(?) panic if the scan takes longer than the tick
-        let mut ticker = Ticker::every(Duration::from_micros(3600));
+        let mut ticker = Ticker::every(Duration::from_micros(4000));
 
         let chan = midi::MidiChannel::new(0);
         const MAX_NOTES: usize = 128;
@@ -120,7 +129,12 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                                     } else {
                                         (127 - min(dur, 240) / 4 - 60) as u8
                                     };
-                                    defmt::debug!("{} velocity {} from dur {}ms", note, velocity, dur);
+                                    defmt::debug!(
+                                        "{} velocity {} from dur {}ms",
+                                        note,
+                                        velocity,
+                                        dur
+                                    );
                                     note_on[note as usize] = true;
                                     chan.note_on(note, velocity).await;
                                 }
