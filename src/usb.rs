@@ -50,7 +50,7 @@ pub async fn usb_task(
     let mut config = Config::new(0xdead, 0xbeef);
     config.manufacturer = Some("dogeystamp");
     config.product = Some("Geode-Piano MIDI keyboard");
-    config.serial_number = Some("0.2.1");
+    config.serial_number = Some("0.3.0");
     config.max_power = 100;
     config.max_packet_size_0 = 64;
 

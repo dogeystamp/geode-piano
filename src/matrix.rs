@@ -3,7 +3,7 @@
 use crate::midi;
 use crate::pins;
 use crate::unwrap;
-use core::cmp::min;
+use core::cmp::{max, min};
 use embassy_rp::gpio;
 use embassy_time::{Duration, Instant, Ticker};
 
@@ -12,6 +12,38 @@ pub enum NormalState {
     NO,
     /// Normal closed
     NC,
+}
+
+/// Profile to map from key press duration to MIDI velocity.
+/// https://www.desmos.com/calculator/mynk7thhzp
+pub enum VelocityProfile {
+    Linear,
+    Heavy,
+    Light,
+}
+
+fn velocity_light(us: u64) -> u8 {
+    if us <= 60000 {
+        min(127, (135000 - us * 6 / 5) / 1000) as u8
+    } else {
+        (127 - min(us, 240000) / 4000 - 60) as u8
+    }
+}
+
+fn velocity_heavy(us: u64) -> u8 {
+    if us <= 17000 {
+        ((113000 - us) / 1000) as u8
+    } else {
+        ((127000 - min(us, 190000) / 2 - 22000) / 1000) as u8
+    }
+}
+
+fn velocity_linear(us: u64) -> u8 {
+    max(127000 - (us as i32), 0) as u8
+}
+
+pub struct Config {
+    pub velocity_prof: VelocityProfile,
 }
 
 /// Task to handle pedals in MIDI
@@ -63,7 +95,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
         }
     }
 
-    pub async fn scan(&mut self, mut pin_driver: pins::TransparentPins) {
+    pub async fn scan(&mut self, mut pin_driver: pins::TransparentPins, config: Config) {
         for i in pin_driver.pins {
             unwrap(pin_driver.set_input(i)).await;
             unwrap(pin_driver.set_pull(i, gpio::Pull::Up)).await;
@@ -89,7 +121,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
         loop {
             let profile: bool = counter == 0;
             counter += 1;
-            counter %= 500;
+            counter %= 5000;
             let prof_start = Instant::now();
             let mut prof_time_last_col = prof_start;
             let mut prof_dur_col = Duration::from_ticks(0);
@@ -121,16 +153,16 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                         midi::KeyAction::N2(note) => {
                             if key_active {
                                 if note_first[note as usize].is_some() && !note_on[note as usize] {
-                                    // millisecond duration of keypress
+                                    // microsecond duration of keypress
                                     let dur =
-                                        note_first[note as usize].unwrap().elapsed().as_millis();
-                                    let velocity: u8 = if dur <= 60 {
-                                        (127 - dur * 6 / 5) as u8
-                                    } else {
-                                        (127 - min(dur, 240) / 4 - 60) as u8
+                                        note_first[note as usize].unwrap().elapsed().as_micros();
+                                    let velocity = match config.velocity_prof {
+                                        VelocityProfile::Heavy => velocity_heavy(dur),
+                                        VelocityProfile::Linear => velocity_linear(dur),
+                                        VelocityProfile::Light => velocity_light(dur),
                                     };
                                     defmt::debug!(
-                                        "{} velocity {} from dur {}ms",
+                                        "{} velocity {} from dur {}us",
                                         note,
                                         velocity,
                                         dur

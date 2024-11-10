@@ -213,7 +213,7 @@ impl From<EndpointError> for Disconnected {
     }
 }
 
-static MIDI_QUEUE: Channel<ThreadModeRawMutex, MidiMsg, 3> = Channel::new();
+static MIDI_QUEUE: Channel<ThreadModeRawMutex, MidiMsg, 10> = Channel::new();
 
 /// Handle sending MIDI until connection breaks
 pub async fn midi_session<'d, T: Instance + 'd>(

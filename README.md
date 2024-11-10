@@ -44,7 +44,7 @@ but is harder to set up.
 
 ### with debug probe
 
-- Install `probe-rs`.
+- Install `probe-rs-tools` (`cargo install probe-rs-tools --locked`).
 - Follow the wiring instructions in the [Pico Getting Started Guide](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf), at _Appendix A: Using Picoprobe_ in the Picoprobe Wiring section.
     You only need to wire GND, SWCLK and SWDIO.
 - If you are using a second Pico as a debug probe,

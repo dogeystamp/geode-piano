@@ -28,7 +28,7 @@ use embassy_rp::i2c;
 use embassy_rp::peripherals::USB;
 use embassy_rp::usb::{Driver, InterruptHandler};
 use geode_piano::matrix;
-use geode_piano::matrix::KeyMatrix;
+use geode_piano::matrix::{KeyMatrix, VelocityProfile};
 use geode_piano::midi;
 use geode_piano::usb::usb_task;
 use geode_piano::{blinky, pin_array, pins, unwrap};
@@ -445,7 +445,13 @@ async fn piano_task(pin_driver: pins::TransparentPins) {
     ];
 
     let mut mat = KeyMatrix::new(col_pins, row_pins, keymap);
-    mat.scan(pin_driver).await;
+    mat.scan(
+        pin_driver,
+        matrix::Config {
+            velocity_prof: VelocityProfile::Heavy,
+        },
+    )
+    .await;
 }
 
 bind_interrupts!(struct Irqs {
