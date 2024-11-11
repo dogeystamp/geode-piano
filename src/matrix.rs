@@ -39,7 +39,7 @@ fn velocity_heavy(us: u64) -> u8 {
 }
 
 fn velocity_linear(us: u64) -> u8 {
-    (max(118000 - (us as i32), 5000) / 1000) as u8
+    (max(120900 - (us as i32), 5000) / 1000) as u8
 }
 
 pub struct Config {
