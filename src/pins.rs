@@ -303,7 +303,7 @@ impl TransparentPins {
         match pin {
             TransparentPin::Onboard(p) => self.onboard_pins[p].set_as_input(),
             TransparentPin::Extended(p) => {
-                extender!(self, p.ext_id)?.pin_mode(p.loc_pin, mcp23017::PinMode::INPUT)?
+                extender!(self, p.ext_id)?.pin_mode(p.loc_pin, mcp23017::PinMode::INPUT)?;
             }
         }
         Ok(())
@@ -316,7 +316,8 @@ impl TransparentPins {
         match pin {
             TransparentPin::Onboard(p) => self.onboard_pins[p].set_as_output(),
             TransparentPin::Extended(p) => {
-                extender!(self, p.ext_id)?.pin_mode(p.loc_pin, mcp23017::PinMode::OUTPUT)?
+                let mut ext = extender!(self, p.ext_id)?;
+                ext.pin_mode(p.loc_pin, mcp23017::PinMode::OUTPUT)?;
             }
         }
         Ok(())

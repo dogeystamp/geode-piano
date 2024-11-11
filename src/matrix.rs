@@ -5,7 +5,7 @@ use crate::pins;
 use crate::unwrap;
 use core::cmp::{max, min};
 use embassy_rp::gpio;
-use embassy_time::{Duration, Instant, Ticker};
+use embassy_time::{Duration, Instant, Timer};
 
 pub enum NormalState {
     /// Normal open
@@ -39,7 +39,7 @@ fn velocity_heavy(us: u64) -> u8 {
 }
 
 fn velocity_linear(us: u64) -> u8 {
-    max(127000 - (us as i32), 0) as u8
+    (max(116000 - (us as i32), 5000) / 1000) as u8
 }
 
 pub struct Config {
@@ -100,10 +100,6 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
             unwrap(pin_driver.set_input(i)).await;
             unwrap(pin_driver.set_pull(i, gpio::Pull::Up)).await;
         }
-
-        // scan frequency
-        // this might(?) panic if the scan takes longer than the tick
-        let mut ticker = Ticker::every(Duration::from_micros(4000));
 
         let chan = midi::MidiChannel::new(0);
         const MAX_NOTES: usize = 128;
@@ -203,7 +199,8 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                 );
             }
 
-            ticker.next().await;
+            // relinquish to other tasks for a moment
+            Timer::after_micros(50).await;
         }
     }
 }

@@ -448,7 +448,7 @@ async fn piano_task(pin_driver: pins::TransparentPins) {
     mat.scan(
         pin_driver,
         matrix::Config {
-            velocity_prof: VelocityProfile::Heavy,
+            velocity_prof: VelocityProfile::Linear,
         },
     )
     .await;
