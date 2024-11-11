@@ -108,6 +108,8 @@ impl IntoIterator for PinCollection {
 pub struct TransparentPins {
     addrs: [u8; N_PIN_EXTENDERS],
     onboard_pins: [Flex<'static, AnyPin>; N_REGULAR_PINS],
+    /// Input/output state of each pin. 1 bit is input, 0 bit is output.
+    io_state: u64,
     i2c_bus: I2cBus,
     disable_unsafe_pins: bool,
     /// Usable pins per extender. Depends on `disable_unsafe_pins`.
@@ -191,6 +193,7 @@ impl TransparentPins {
     ) -> Result<Self, Error> {
         let mut ret = TransparentPins {
             addrs,
+            io_state: (1 << (N_REGULAR_PINS + N_EXTENDED_PINS)) - 1,
             onboard_pins: pins.map(Flex::new),
             i2c_bus: shared_bus::BusManagerSimple::new(i2c),
             disable_unsafe_pins: false,
@@ -221,7 +224,12 @@ impl TransparentPins {
             // ports are flipped from what it should be
             let port_a = (val & (0xff00)) >> 8;
             let port_b = val & (0x00ff);
-            defmt::trace!("raw_to_usable: raw {:016b} a {:08b} b {:08b}", val, port_a, port_b);
+            defmt::trace!(
+                "raw_to_usable: raw {:016b} a {:08b} b {:08b}",
+                val,
+                port_a,
+                port_b
+            );
             (port_a & 0x7f) | ((port_b & 0x7f) << 7)
         } else {
             val
@@ -300,10 +308,13 @@ impl TransparentPins {
     pub fn set_input(&mut self, addr: u8) -> Result<(), Error> {
         let pin_n = self.addr_to_pin(addr);
         let pin = self.get_pin(pin_n)?;
+        self.io_state |= 1 << pin_n;
         match pin {
             TransparentPin::Onboard(p) => self.onboard_pins[p].set_as_input(),
             TransparentPin::Extended(p) => {
-                extender!(self, p.ext_id)?.pin_mode(p.loc_pin, mcp23017::PinMode::INPUT)?;
+                let ext_io_word = (self.io_state >> (p.ext_id * PINS_PER_EXTENDER))
+                    & ((1 << PINS_PER_EXTENDER) - 1);
+                extender!(self, p.ext_id)?.overwrite_pin_mode(p.loc_pin, ext_io_word as u16)?;
             }
         }
         Ok(())
@@ -313,11 +324,13 @@ impl TransparentPins {
     pub fn set_output(&mut self, addr: u8) -> Result<(), Error> {
         let pin_n = self.addr_to_pin(addr);
         let pin = self.get_pin(pin_n)?;
+        self.io_state &= !(1 << pin_n);
         match pin {
             TransparentPin::Onboard(p) => self.onboard_pins[p].set_as_output(),
             TransparentPin::Extended(p) => {
-                let mut ext = extender!(self, p.ext_id)?;
-                ext.pin_mode(p.loc_pin, mcp23017::PinMode::OUTPUT)?;
+                let ext_io_word = (self.io_state >> (p.ext_id * PINS_PER_EXTENDER))
+                    & ((1 << PINS_PER_EXTENDER) - 1);
+                extender!(self, p.ext_id)?.overwrite_pin_mode(p.loc_pin, ext_io_word as u16)?;
             }
         }
         Ok(())
