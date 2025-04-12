@@ -104,10 +104,10 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
         let chan = midi::MidiChannel::new(0);
         const MAX_NOTES: usize = 128;
 
-        // is note currently on
-        let mut note_on = [false; MAX_NOTES];
         // (for velocity detection) moment key is first touched
         let mut note_first: [Option<Instant>; MAX_NOTES] = [None; MAX_NOTES];
+        // (for debouncing) moment note was last on
+        let mut note_on: [Option<Instant>; MAX_NOTES] = [None; MAX_NOTES];
 
         let mut counter = 0;
         let mut prof_col_idx = 0;
@@ -118,9 +118,9 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
             let profile: bool = counter == 0;
             counter += 1;
             counter %= 5000;
-            let prof_start = Instant::now();
-            let mut prof_time_last_col = prof_start;
-            let mut prof_dur_col = Duration::from_ticks(0);
+            let _prof_start = Instant::now();
+            let mut _prof_time_last_col = _prof_start;
+            let mut _prof_dur_col = Duration::from_ticks(0);
 
             for (i, col) in self.col_pins.iter().enumerate() {
                 unwrap(pin_driver.set_output(*col)).await;
@@ -128,7 +128,7 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                 unwrap(pin_driver.set_input(*col)).await;
 
                 if profile && i == prof_col_idx {
-                    prof_dur_col = prof_time_last_col.elapsed();
+                    _prof_dur_col = _prof_time_last_col.elapsed();
                 }
 
                 // values that are logical ON
@@ -144,11 +144,23 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                                 }
                             } else if note_first[note as usize].is_some() {
                                 note_first[note as usize] = None;
+
+                                if let Some(note_on_time) = note_on[note as usize] {
+                                    note_on[note as usize] = None;
+                                    chan.note_off(note, 0).await;
+                                    defmt::debug!(
+                                        "turned off note {} after {} us",
+                                        note,
+                                        note_on_time.elapsed().as_micros()
+                                    );
+                                }
                             }
                         }
                         midi::KeyAction::N2(note) => {
                             if key_active {
-                                if note_first[note as usize].is_some() && !note_on[note as usize] {
+                                if note_first[note as usize].is_some()
+                                    && note_on[note as usize].is_none()
+                                {
                                     // microsecond duration of keypress
                                     let dur =
                                         note_first[note as usize].unwrap().elapsed().as_micros();
@@ -163,40 +175,40 @@ impl<const N_ROWS: usize, const N_COLS: usize> KeyMatrix<N_ROWS, N_COLS> {
                                         velocity,
                                         dur
                                     );
-                                    note_on[note as usize] = true;
+                                    note_on[note as usize] = Some(Instant::now());
                                     chan.note_on(note, velocity).await;
+                                } else if note_on[note as usize].is_some() {
+                                    // keep refreshing the note
+                                    note_on[note as usize] = Some(Instant::now());
                                 }
-                            } else if note_on[note as usize] {
-                                note_on[note as usize] = false;
-                                chan.note_off(note, 0).await;
                             }
                         }
                         midi::KeyAction::N(note, velocity) => {
                             if key_active {
-                                if !note_on[note as usize] {
-                                    note_on[note as usize] = true;
+                                if note_on[note as usize].is_none() {
+                                    note_on[note as usize] = Some(Instant::now());
                                     chan.note_on(note, velocity).await;
                                 }
-                            } else if note_on[note as usize] {
-                                note_on[note as usize] = false;
+                            } else if note_on[note as usize].is_some() {
+                                note_on[note as usize] = None;
                                 chan.note_off(note, 0).await;
                             }
                         }
                         midi::KeyAction::NOP => {}
                     }
                 }
-                prof_time_last_col = Instant::now();
+                _prof_time_last_col = Instant::now();
             }
             if profile {
-                let time_total = prof_start.elapsed();
+                let _time_total = _prof_start.elapsed();
                 prof_col_idx += 1;
                 prof_col_idx %= N_COLS;
-                defmt::debug!(
-                    "profile: total scan took {}us, {}-th column {}us",
-                    time_total.as_micros(),
-                    prof_col_idx,
-                    prof_dur_col.as_micros()
-                );
+                // defmt::debug!(
+                //     "profile: total scan took {}us, {}-th column {}us",
+                //     time_total.as_micros(),
+                //     prof_col_idx,
+                //     prof_dur_col.as_micros()
+                // );
             }
 
             // relinquish to other tasks for a moment
